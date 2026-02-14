@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth | Smart Road Vision Yojana</title>
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="glass-nav">
+        <div class="container flex justify-between items-center">
+            <a href="index.html" class="logo-glow">
+                <i class="fa-solid fa-road"></i> SRVY
+            </a>
+            <a href="index.html" class="text-sm text-muted hover:text-white">
+                <i class="fa-solid fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </nav>
+
+    <div class="auth-container">
+
+        <!-- Login Form -->
+        <div id="login-form" class="glass-card auth-box animate-fade-in">
+            <div class="text-center mb-4">
+                <h2>Citizen Login</h2>
+                <p class="text-muted text-sm">Welcome back to the portal</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="name@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                    <div class="text-right mt-1">
+                        <a href="#" class="text-sm text-accent">Forgot Password?</a>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">
+                    Login securely
+                </button>
+            </form>
+
+            <div class="text-center mt-4 text-sm text-muted">
+                Don't have an account? <a href="#" onclick="toggleAuth('register')" class="text-primary">Register
+                    Here</a>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="glass-card auth-box animate-fade-in hidden">
+            <div class="text-center mb-4">
+                <h2>Citizen Registration</h2>
+                <p class="text-muted text-sm">Join the Smart Road Initiative</p>
+            </div>
+
+            <form onsubmit="handleRegister(event)">
+                <div class="input-group">
+                    <label class="input-label">Full Name</label>
+                    <input type="text" id="reg-name" class="form-control" placeholder="Full Name" required>
+                </div>
+
+                <div class="flex gap-2">
+                    <div class="input-group w-full">
+                        <label class="input-label">District</label>
+                        <select class="form-control" id="district-select" onchange="updateMandals(this.value)">
+                            <option value="">Select District</option>
+                        </select>
+                    </div>
+                    <div class="input-group w-full">
+                        <label class="input-label">Mandal</label>
+                        <select class="form-control" id="mandal-select">
+                            <option value="">Select Mandal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Email Address</label>
+                    <input type="email" id="reg-email" class="form-control" placeholder="name@example.com" required>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Mobile Number</label>
+                    <input type="tel" id="reg-mobile" class="form-control" placeholder="9876543210" pattern="[0-9]{10}"
+                        required>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Password</label>
+                    <input type="password" id="reg-password" class="form-control" placeholder="Create a password"
+                        required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="text-center mt-4 text-sm text-muted">
+                Already registered? <a href="#" onclick="toggleAuth('login')" class="text-primary">Login Here</a>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/mock-api.js"></script>
+    <script src="js/location-data.js"></script>
+    <script>
+        // Simple Toggle Logic
+        function toggleAuth(mode) {
+            if (mode === 'register') {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            } else {
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+            }
+        }
+
+        // Handle URL Params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'register') {
+            toggleAuth('register');
+        }
+
+        // Populate Districts on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            const districtSelect = document.getElementById('district-select');
+            if (districtSelect && typeof TELANGANA_DATA !== 'undefined') {
+                // Clear existing options except first
+                districtSelect.innerHTML = '<option value="">Select District</option>';
+
+                Object.keys(TELANGANA_DATA).sort().forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
+                });
+            }
+        });
+
+        // Mandal Logic
+        function updateMandals(district) {
+            const mandalSelect = document.getElementById('mandal-select');
+            mandalSelect.innerHTML = '<option value="">Select Mandal</option>';
+
+            if (district && TELANGANA_DATA[district]) {
+                TELANGANA_DATA[district].sort().forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m;
+                    option.textContent = m;
+                    mandalSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Auth Mock Handlers
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+
+            setTimeout(() => {
+                // Get Users DB
+                const users = JSON.parse(localStorage.getItem('users_db') || '[]');
+                const validUser = users.find(u => u.email === email && u.password === password);
+
+                if (validUser) {
+                    localStorage.setItem('user', JSON.stringify(validUser));
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert('Invalid Email or Password. Please register if you are new.');
+                    btn.innerHTML = originalText;
+                }
+            }, 1000);
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const district = document.getElementById('district-select').value;
+            const mandal = document.getElementById('mandal-select').value;
+            const mobile = document.getElementById('reg-mobile').value;
+            const email = document.getElementById('reg-email').value; // Added email field to register
+            const password = document.getElementById('reg-password').value;
+
+            const btn = e.target.querySelector('button');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ID...';
+
+            setTimeout(() => {
+                const newUser = {
+                    name,
+                    district,
+                    mandal,
+                    mobile,
+                    email,
+                    password
+                };
+
+                // Save to DB
+                const users = JSON.parse(localStorage.getItem('users_db') || '[]');
+                users.push(newUser);
+                localStorage.setItem('users_db', JSON.stringify(users));
+
+                // Auto Login
+                localStorage.setItem('user', JSON.stringify(newUser));
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        }
+    </script>
+</body>
+
+</html>

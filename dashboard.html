@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Smart Road Vision Yojana</title>
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .file-upload-box {
+            border: 2px dashed var(--glass-border);
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .file-upload-box:hover,
+        .file-upload-box.drag-over {
+            border-color: var(--primary);
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        /* Tab Switching Logic */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Analysis Results */
+        .scan-line {
+            height: 2px;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            position: absolute;
+            width: 100%;
+            top: 0;
+            animation: scan 1.5s infinite alternate;
+        }
+
+        @keyframes scan {
+            from {
+                top: 0;
+            }
+
+            to {
+                top: 100%;
+            }
+        }
+
+        .media-preview-container {
+            position: relative;
+            height: 300px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        img.preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-glow mb-4" style="font-size: 1.5rem;">
+            <i class="fa-solid fa-road"></i> SRVY
+        </div>
+
+        <div class="user-profile mb-4 flex items-center gap-2">
+            <div
+                style="width: 40px; height: 40px; background: var(--glass-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div>
+                <h4 id="user-name" style="font-size: 0.9rem;">Citizen</h4>
+                <p class="text-xs text-muted">Telangana</p>
+            </div>
+        </div>
+
+        <nav class="flex-1">
+            <div class="nav-item active" onclick="switchTab('dashboard')">
+                <i class="fa-solid fa-house"></i> Dashboard
+            </div>
+            <div class="nav-item" onclick="switchTab('analyze')">
+                <i class="fa-solid fa-camera"></i> Auto-Detect Issue
+            </div>
+            <div class="nav-item" onclick="switchTab('track')">
+                <i class="fa-solid fa-magnifying-glass"></i> Track Status
+            </div>
+        </nav>
+
+        <div class="nav-item text-danger" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- DASHBOARD TAB -->
+        <div id="tab-dashboard" class="tab-content active">
+            <header class="flex justify-between items-center mb-4">
+                <h2>Overview</h2>
+                <div class="badge badge-pending">Verified Citizen</div>
+            </header>
+
+            <div class="flex gap-4 mb-4">
+                <div class="glass-card flex-1">
+                    <h1 class="text-primary" id="stat-total">0</h1>
+                    <p class="text-muted">Total Complaints</p>
+                </div>
+                <div class="glass-card flex-1">
+                    <h1 class="text-success" id="stat-resolved">0</h1>
+                    <p class="text-muted">Issues Repaired</p>
+                </div>
+                <div class="glass-card flex-1">
+                    <h1 class="text-accent" id="stat-pending">0</h1>
+                    <p class="text-muted">In Progress</p>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3 class="mb-4">Recent Activity</h3>
+                <div id="recent-list">
+                    <p class="text-muted text-center py-4">No recent complaints found.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYZE & COMPLAINT TAB -->
+        <div id="tab-analyze" class="tab-content">
+            <h2 class="mb-4">AI Road Inspection</h2>
+
+            <div class="flex gap-4">
+                <!-- Left: Upload/Analyze -->
+                <div class="w-full" style="flex: 1;">
+                    <div class="glass-card mb-4">
+                        <div class="file-upload-box" id="drop-zone">
+                            <i class="fa-solid fa-cloud-arrow-up"
+                                style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></i>
+                            <p><strong>Click to Upload</strong> or drag road image/video here</p>
+                            <input type="file" id="file-input" hidden accept="image/*,video/*">
+                        </div>
+                    </div>
+
+                    <!-- Hidden Analysis View -->
+                    <div id="analysis-view" class="glass-card hidden">
+                        <div class="media-preview-container mb-4">
+                            <img id="preview-img" class="preview-img" src="" alt="Preview">
+                            <div id="scan-overlay" class="scan-line hidden"></div>
+                        </div>
+
+                        <div id="analysis-loading" class="text-center hidden">
+                            <i class="fa-solid fa-circle-notch fa-spin text-primary" style="font-size: 2rem;"></i>
+                            <p class="mt-4">AI analyzing road surface...</p>
+                            <p class="text-sm text-muted">Detecting cracks, potholes, and hazards</p>
+                        </div>
+
+                        <div id="analysis-result" class="hidden animate-fade-in">
+                            <div class="flex justify-between items-center mb-4 p-4 border rounded"
+                                style="border-color: var(--glass-border);">
+                                <div>
+                                    <p class="text-muted text-sm">Detected Issue</p>
+                                    <h3 id="res-type">Pothole</h3>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-muted text-sm">Severity</p>
+                                    <h3 id="res-severity" class="text-danger">High</h3>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-muted text-sm">AI Confidence</p>
+                                    <h3 id="res-conf" class="text-accent">98%</h3>
+                                </div>
+                            </div>
+
+                            <div class="alert badge-pending p-3 rounded mb-4 text-sm" id="res-desc">
+                                Description here...
+                            </div>
+
+                            <button onclick="proceedToComplaint()" class="btn btn-primary w-full">
+                                Raise Official Complaint
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Complaint Form (Starts Hidden) -->
+                <div id="complaint-section" class="w-full hidden" style="flex: 1;">
+                    <div class="glass-card animate-fade-in">
+                        <h3 class="mb-4">Raise Complaint</h3>
+                        <form onsubmit="handleComplaintSubmit(event)">
+
+                            <!-- New Preview Section -->
+                            <div class="mb-4 text-center">
+                                <p class="text-sm text-muted mb-2">Evidence Preview</p>
+                                <img id="form-preview-img" src="" class="glass-card"
+                                    style="height: 150px; width: 100%; object-fit: cover; border-radius: 8px;">
+                            </div>
+                            <div class="flex gap-2">
+                                <div class="input-group w-full">
+                                    <label class="input-label">Issue Type (AI)</label>
+                                    <input type="text" id="form-type" class="form-control" readonly
+                                        style="opacity: 0.7;">
+                                </div>
+                                <div class="input-group w-full">
+                                    <label class="input-label">Severity</label>
+                                    <input type="text" id="form-severity" class="form-control" readonly
+                                        style="opacity: 0.7;">
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">Location / Landmark</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="form-address" class="form-control" required
+                                        placeholder="Enter area name">
+                                    <button type="button" class="btn btn-outline" onclick="getLocation()">
+                                        <i class="fa-solid fa-location-crosshairs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">Complaint Letter Preview</label>
+                                <textarea id="letter-preview" class="form-control" rows="6"
+                                    style="font-family: monospace; font-size: 0.9rem;"></textarea>
+                            </div>
+
+                            <div class="flex items-center gap-2 mb-4">
+                                <input type="checkbox" required id="confirm-check">
+                                <label for="confirm-check" class="text-sm">I certify this information is true.</label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-full">Submit Complaint</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRACK TAB -> Renamed to STATUS -->
+        <div id="tab-track" class="tab-content">
+            <h2 class="mb-4">My Complaints Status</h2>
+
+            <div class="glass-card">
+                <div id="complaints-list-container">
+                    <!-- List will be injected here -->
+                    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-muted);">
+                                <th style="padding: 10px;">ID</th>
+                                <th style="padding: 10px;">Issue</th>
+                                <th style="padding: 10px;">Date</th>
+                                <th style="padding: 10px;">Department</th>
+                                <th style="padding: 10px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="complaints-table-body">
+                            <!-- Rows go here -->
+                        </tbody>
+                    </table>
+
+                    <div id="no-complaints-msg" class="text-center py-4 hidden">
+                        <p class="text-muted">No complaints raised yet.</p>
+                        <button onclick="switchTab('analyze')" class="btn btn-outline mt-2">Raise New Complaint</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/mock-api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
