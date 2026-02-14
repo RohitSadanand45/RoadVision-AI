@@ -116,8 +116,8 @@
                 </div>
                 <div class="input-group">
                     <label class="input-label">Password</label>
-                    <input type="password" id="reg-password" class="form-control" placeholder="Create a password"
-                        required>
+                    <input type="password" id="reg-password" class="form-control"
+                        placeholder="Create a password (min 6 chars)" minlength="6" required>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-full">
@@ -132,7 +132,9 @@
 
     </div>
 
-    <script src="js/mock-api.js"></script>
+    <!-- Load Supabase CDN + Config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/superbase.js"></script>
     <script src="js/location-data.js"></script>
     <script>
         // Simple Toggle Logic
@@ -156,7 +158,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             const districtSelect = document.getElementById('district-select');
             if (districtSelect && typeof TELANGANA_DATA !== 'undefined') {
-                // Clear existing options except first
                 districtSelect.innerHTML = '<option value="">Select District</option>';
 
                 Object.keys(TELANGANA_DATA).sort().forEach(district => {
@@ -183,8 +184,11 @@
             }
         }
 
-        // Auth Mock Handlers
-        function handleLogin(e) {
+        // =============================================
+        // SUPABASE AUTH HANDLERS
+        // =============================================
+
+        async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -193,52 +197,95 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
 
-            setTimeout(() => {
-                // Get Users DB
-                const users = JSON.parse(localStorage.getItem('users_db') || '[]');
-                const validUser = users.find(u => u.email === email && u.password === password);
+            try {
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
 
-                if (validUser) {
-                    localStorage.setItem('user', JSON.stringify(validUser));
-                    window.location.href = 'dashboard.html';
-                } else {
-                    alert('Invalid Email or Password. Please register if you are new.');
+                if (error) {
+                    alert('Login failed: ' + error.message);
                     btn.innerHTML = originalText;
+                    return;
                 }
-            }, 1000);
+
+                // Store user info locally for quick UI access
+                const userInfo = {
+                    name: data.user.user_metadata.name || email.split('@')[0],
+                    email: data.user.email,
+                    district: data.user.user_metadata.district || '',
+                    mandal: data.user.user_metadata.mandal || '',
+                    mobile: data.user.user_metadata.mobile || ''
+                };
+                localStorage.setItem('user', JSON.stringify(userInfo));
+
+                window.location.href = 'dashboard.html';
+
+            } catch (err) {
+                console.error('Login error:', err);
+                alert('An unexpected error occurred. Please try again.');
+                btn.innerHTML = originalText;
+            }
         }
 
-        function handleRegister(e) {
+        async function handleRegister(e) {
             e.preventDefault();
             const name = document.getElementById('reg-name').value;
             const district = document.getElementById('district-select').value;
             const mandal = document.getElementById('mandal-select').value;
             const mobile = document.getElementById('reg-mobile').value;
-            const email = document.getElementById('reg-email').value; // Added email field to register
+            const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
 
             const btn = e.target.querySelector('button');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ID...';
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating Account...';
 
-            setTimeout(() => {
-                const newUser = {
-                    name,
-                    district,
-                    mandal,
-                    mobile,
-                    email,
-                    password
+            try {
+                const { data, error } = await window.supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            name: name,
+                            district: district,
+                            mandal: mandal,
+                            mobile: mobile
+                        }
+                    }
+                });
+
+                if (error) {
+                    alert('Registration failed: ' + error.message);
+                    btn.innerHTML = originalText;
+                    return;
+                }
+
+                // Store user info locally for quick UI access
+                const userInfo = {
+                    name: name,
+                    email: email,
+                    district: district,
+                    mandal: mandal,
+                    mobile: mobile
                 };
+                localStorage.setItem('user', JSON.stringify(userInfo));
 
-                // Save to DB
-                const users = JSON.parse(localStorage.getItem('users_db') || '[]');
-                users.push(newUser);
-                localStorage.setItem('users_db', JSON.stringify(users));
+                // Supabase may require email confirmation depending on settings.
+                // If email confirmation is OFF, the user is auto-logged-in.
+                if (data.session) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert('Registration successful! Please check your email to confirm, then login.');
+                    toggleAuth('login');
+                    btn.innerHTML = originalText;
+                }
 
-                // Auto Login
-                localStorage.setItem('user', JSON.stringify(newUser));
-                window.location.href = 'dashboard.html';
-            }, 1500);
+            } catch (err) {
+                console.error('Registration error:', err);
+                alert('An unexpected error occurred. Please try again.');
+                btn.innerHTML = originalText;
+            }
         }
     </script>
 </body>
