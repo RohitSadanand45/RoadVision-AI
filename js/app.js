@@ -168,7 +168,6 @@ async function performAnalysis(file) {
         // Update UI
         document.getElementById('res-type').innerText = result.type;
         document.getElementById('res-severity').innerText = result.severity;
-        document.getElementById('res-conf').innerText = result.confidence + '%';
         document.getElementById('res-desc').innerText = result.desc;
 
         // Color Coding
@@ -195,7 +194,7 @@ function proceedToComplaint() {
 
 function generateLetterPreview(result) {
     const address = document.getElementById('form-address').value;
-    const text = `To,\nThe Commissioner,\nGreater Hyderabad Municipal Corporation,\n\nSubject: Complaint regarding ${result.type} at ${address}\n\nRespected Sir/Madam,\n\nI would like to bring to your notice a ${result.severity} severity ${result.type} detected at ${address}. \n\nAI Analysis Details:\n- Issue: ${result.type}\n- Severity: ${result.severity}\n- Confidence: ${result.confidence}%\n- Location: ${address}\n\nPlease take necessary action.\n\nSincerely,\n${user.name}\n${user.email}`;
+    const text = `To,\nThe Commissioner,\nGreater Hyderabad Municipal Corporation,\n\nSubject: Complaint regarding ${result.type} at ${address}\n\nRespected Sir/Madam,\n\nI would like to bring to your notice a ${result.severity} severity ${result.type} detected at ${address}. \n\nAI Analysis Details:\n- Issue: ${result.type}\n- Severity: ${result.severity}\n- Location: ${address}\n\nPlease take necessary action.\n\nSincerely,\n${user.name}\n${user.email}`;
     document.getElementById('letter-preview').value = text;
 }
 
@@ -207,8 +206,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Automatically update location in the letter preview whenever address changes
             const analysisResult = {
                 type: document.getElementById('form-type').value,
-                severity: document.getElementById('form-severity').value,
-                confidence: document.getElementById('res-conf')?.innerText || '0%'
+                severity: document.getElementById('form-severity').value
             };
             if (analysisResult.type) {
                 generateLetterPreview(analysisResult);
@@ -416,220 +414,131 @@ function closeSuccessModal() {
 
 // Download Complaint Form as Professional PDF
 function downloadComplaintFormPDF(complaint) {
-    const letterContent = document.getElementById('letter-preview').value;
+    // Fallback to last submitted complaint if none provided
+    const data = complaint || window.lastSubmittedComplaint;
     
-    // Create HTML content for PDF
-    const htmlContent = `
-    <html>
-    <head>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 20px;
-                background: white;
-            }
-            .header {
-                text-align: center;
-                border-bottom: 3px solid #3b82f6;
-                padding-bottom: 15px;
-                margin-bottom: 20px;
-            }
-            .header-title {
-                font-size: 24px;
-                font-weight: bold;
-                color: #1e40af;
-                margin: 0;
-            }
-            .header-subtitle {
-                font-size: 14px;
-                color: #666;
-                margin: 5px 0 0 0;
-            }
-            .complaint-id {
-                background: #eff6ff;
-                padding: 10px;
-                border-left: 4px solid #3b82f6;
-                margin-bottom: 20px;
-                font-weight: bold;
-                color: #1e40af;
-            }
-            .section {
-                margin-bottom: 20px;
-            }
-            .section-title {
-                background: #1e40af;
-                color: white;
-                padding: 10px 15px;
-                font-size: 14px;
-                font-weight: bold;
-                margin-bottom: 10px;
-                border-radius: 3px;
-            }
-            .details-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-                margin-bottom: 15px;
-            }
-            .detail-item {
-                background: #f9fafb;
-                padding: 10px;
-                border-radius: 3px;
-                border-left: 3px solid #3b82f6;
-            }
-            .detail-label {
-                font-size: 11px;
-                color: #666;
-                text-transform: uppercase;
-                font-weight: bold;
-                margin-bottom: 3px;
-            }
-            .detail-value {
-                font-size: 13px;
-                color: #1f2937;
-                font-weight: 500;
-            }
-            .letter-content {
-                background: #f9fafb;
-                padding: 15px;
-                border-radius: 3px;
-                line-height: 1.6;
-                font-size: 12px;
-                color: #374151;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-            .severity-high {
-                color: #dc2626;
-                font-weight: bold;
-            }
-            .severity-medium {
-                color: #f59e0b;
-                font-weight: bold;
-            }
-            .severity-low {
-                color: #10b981;
-                font-weight: bold;
-            }
-            .footer {
-                border-top: 2px solid #e5e7eb;
-                margin-top: 30px;
-                padding-top: 15px;
-                font-size: 11px;
-                color: #666;
-                text-align: center;
-            }
-            .footer-contact {
-                margin-top: 10px;
-                font-weight: bold;
-            }
-            .status-badge {
-                display: inline-block;
-                background: #dbeafe;
-                color: #1e40af;
-                padding: 5px 10px;
-                border-radius: 3px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <p class="header-title"> RoadVision AI - Complaint Form</p>
-            <p class="header-subtitle">Official Road Infrastructure Issue Complaint</p>
-        </div>
+    if (!data || !data.id) {
+        alert('Unable to generate PDF: complaint data is missing. Please submit a complaint first.');
+        return;
+    }
 
-        <div class="complaint-id">
-            📋 Complaint ID: ${complaint.id} | Date: ${complaint.date}
-        </div>
+    const letterElement = document.getElementById('letter-preview');
+    const letterContent = letterElement ? letterElement.value.trim() : 'No additional letter content provided.';
 
-        <div class="section">
-            <div class="section-title">📌 COMPLAINANT INFORMATION</div>
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">Name</div>
-                    <div class="detail-value">${complaint.userName}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Email</div>
-                    <div class="detail-value">${complaint.email}</div>
-                </div>
+    // Create a temporary container for the PDF content
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-10000px';
+    container.style.top = '0';
+    container.style.width = '210mm'; // A4 width
+    container.style.padding = '20px';
+    container.style.background = 'white';
+    container.style.color = '#000';
+    container.style.fontFamily = 'Arial, sans-serif';
+
+    // Construct the HTML - Use simple tables for layout as it's most compatible with html2canvas
+    container.innerHTML = `
+        <div style="border: 1px solid #ddd; padding: 20px;">
+            <div style="text-align: center; border-bottom: 3px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
+                <h1 style="margin: 0; color: #1e40af; font-size: 26px;">RoadVision AI</h1>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px; font-weight: bold;">OFFICIAL ROAD INFRASTRUCTURE COMPLAINT FORM</p>
+            </div>
+
+            <div style="background: #eff6ff; padding: 12px; border-left: 5px solid #3b82f6; margin-bottom: 25px; font-weight: bold; color: #1e40af; font-size: 14px;">
+                📋 Complaint ID: ${data.id} | Date: ${data.date || new Date().toLocaleDateString()}
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td colspan="2" style="background: #1e40af; color: white; padding: 10px; font-weight: bold; border-radius: 4px 4px 0 0;">📌 COMPLAINANT INFORMATION</td>
+                </tr>
+                <tr>
+                    <td style="width: 50%; padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Name</div>
+                        <div style="font-size: 14px; font-weight: bold;">${data.userName || 'Citizen'}</div>
+                    </td>
+                    <td style="width: 50%; padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Email</div>
+                        <div style="font-size: 14px; font-weight: bold;">${data.email || 'N/A'}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                    <td colspan="2" style="background: #1e40af; color: white; padding: 10px; font-weight: bold; border-radius: 4px 4px 0 0;">🚨 ISSUE DETAILS</td>
+                </tr>
+                <tr>
+                    <td style="width: 50%; padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Issue Type</div>
+                        <div style="font-size: 14px; font-weight: bold;">${data.type || 'N/A'}</div>
+                    </td>
+                    <td style="width: 50%; padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Severity Level</div>
+                        <div style="font-size: 14px; font-weight: bold; color: ${data.severity === 'High' ? '#dc2626' : (data.severity === 'Medium' ? '#f59e0b' : '#10b981')};">${data.severity || 'N/A'}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Location / Address</div>
+                        <div style="font-size: 14px; font-weight: bold;">${data.address || 'N/A'}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 50%; padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Department Assigned</div>
+                        <div style="font-size: 14px; font-weight: bold;">${data.department || 'N/A'}</div>
+                    </td>
+                    <td style="width: 50%; padding: 12px; border: 1px solid #eee; background: #f9fafb;">
+                        <div style="font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px;">Expected Resolution</div>
+                        <div style="font-size: 14px; font-weight: bold;">${data.eta || 'N/A'}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="margin-bottom: 20px;">
+                <div style="background: #1e40af; color: white; padding: 10px; font-weight: bold; border-radius: 4px 4px 0 0;">📄 FORMAL COMPLAINT LETTER</div>
+                <div style="background: #fdfdfd; padding: 20px; border: 1px solid #eee; line-height: 1.6; font-size: 13px; color: #333; white-space: pre-wrap; min-height: 150px;">${letterContent}</div>
+            </div>
+
+            <div style="font-size: 12px; line-height: 1.8; color: #444; border-top: 2px solid #eee; padding-top: 15px; margin-top: 30px;">
+                <p>✓ This is an automated report generated by the RoadVision AI Portal.</p>
+                <p>✓ All issue details provided are based on citizen input and AI-assisted verification.</p>
+                <p>✓ For tracking, please use the Complaint ID: <strong>${data.id}</strong> on our portal.</p>
+            </div>
+
+            <div style="margin-top: 40px; text-align: center; font-size: 11px; color: #888;">
+                <p style="margin: 0; font-weight: bold; color: #555;">RoadVision AI - Smart Infrastructure Portal</p>
+                <p style="margin: 4px 0;">🌐 https://roadvision.ai | 📧 support@roadvision.ai</p>
+                <p style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">This is a digitally generated document and requires no physical signature.</p>
             </div>
         </div>
-
-        <div class="section">
-            <div class="section-title">🚨 ISSUE DETAILS</div>
-            <div class="details-grid">
-                <div class="detail-item">
-                    <div class="detail-label">Issue Type</div>
-                    <div class="detail-value">${complaint.type}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Severity Level</div>
-                    <div class="detail-value ${complaint.severity === 'High' ? 'severity-high' : complaint.severity === 'Medium' ? 'severity-medium' : 'severity-low'}">${complaint.severity}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Location / Address</div>
-                    <div class="detail-value">${complaint.address}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Department Assigned</div>
-                    <div class="detail-value">${complaint.department}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Expected Resolution Time</div>
-                    <div class="detail-value">${complaint.eta}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Status</div>
-                    <div><span class="status-badge">${complaint.status}</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">📄 FORMAL COMPLAINT LETTER</div>
-            <div class="letter-content">${letterContent}</div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">ℹ️ IMPORTANT INFORMATION</div>
-            <div style="font-size: 12px; line-height: 1.8; color: #374151;">
-                <p>✓ Please keep this complaint form safe for your records.</p>
-                <p>✓ Your Complaint ID is <strong>${complaint.id}</strong>. Use this ID to track your complaint status on the portal.</p>
-                <p>✓ Expected resolution time: <strong>${complaint.eta}</strong></p>
-                <p>✓ For urgent matters (High severity), immediate action will be taken by: <strong>${complaint.department}</strong></p>
-                <p>✓ You will receive updates via email at <strong>${complaint.email}</strong></p>
-                <p>✓ AI Confidence in issue detection: High (98%+)</p>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>Generated by RoadVision AI - Smart Infrastructure Portal</p>
-            <p class="footer-contact">📧 support@roadvision.ai | 🌐 https://roadvision.ai</p>
-            <p style="margin-top: 15px; border-top: 1px solid #e5e7eb; padding-top: 10px;">
-                This is an official complaint record. The information provided herein is true to the best of my knowledge and belief.
-            </p>
-        </div>
-    </body>
-    </html>
     `;
 
-    // Generate PDF using html2pdf
-    const element = document.createElement('div');
-    element.innerHTML = htmlContent;
-    
+    document.body.appendChild(container);
+
+    // PDF Generation Options
     const opt = {
-        margin: 10,
-        filename: `Complaint_${complaint.id}.pdf`,
+        margin: [10, 10, 10, 10],
+        filename: `Complaint_Form_${data.id}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            letterRendering: true
+        },
         jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
     };
 
-    html2pdf().set(opt).from(element).save();
+    // Use the html2pdf worker for better control
+    html2pdf().set(opt).from(container).save().then(() => {
+        document.body.removeChild(container);
+    }).catch(err => {
+        console.error('PDF Generation Error:', err);
+        document.body.removeChild(container);
+        alert('Failed to generate PDF. Please try again.');
+    });
 }
 
 // Tracking List Logic
@@ -672,4 +581,3 @@ function loadComplaintsTable() {
 
 // Initial Load
 loadStats();
-

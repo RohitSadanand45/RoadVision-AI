@@ -12,10 +12,10 @@ const MockAPI = {
             setTimeout(() => {
                 // Randomize result for demo purposes
                 const scenarios = [
-                    { type: 'Pothole', severity: 'High', confidence: 96, color: '#ef4444', desc: 'Deep pothole detected on main carriage way. Risk of vehicle damage.' },
-                    { type: 'Waterlogging', severity: 'Medium', confidence: 89, color: '#fbbf24', desc: 'Stagnant water accumulation detected. Drainage inspection recommended.' },
-                    { type: 'Road Crack', severity: 'Low', confidence: 92, color: '#3b82f6', desc: 'Surface cracking visible. Preventive maintenance suggested.' },
-                    { type: 'No Issue', severity: 'Safe', confidence: 99, color: '#10b981', desc: 'Road surface appears clear and safe.' }
+                    { type: 'Pothole', severity: 'High', color: '#ef4444', desc: 'Deep pothole detected on main carriage way. Risk of vehicle damage.' },
+                    { type: 'Waterlogging', severity: 'Medium', color: '#fbbf24', desc: 'Stagnant water accumulation detected. Drainage inspection recommended.' },
+                    { type: 'Road Crack', severity: 'Low', color: '#3b82f6', desc: 'Surface cracking visible. Preventive maintenance suggested.' },
+                    { type: 'No Issue', severity: 'Low', color: '#10b981', desc: 'Road surface appears clear and safe.' }
                 ];
 
                 // Pick random scenario (exclude 'No Issue' more often for better demo)
@@ -73,4 +73,3 @@ const MockAPI = {
         };
     }
 };
-
